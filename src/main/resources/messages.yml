@@ -1,0 +1,39 @@
+arrow:
+  unknown: "&6&l自定义箭矢 &r&8» &7未知的箭矢类型!可用类型: &f%s "
+  give: "&6&l自定义箭矢 &r&8» &7你获得了&3%d&7支 &a%s"
+  allarrow: "&6&l自定义箭矢 &r&8» &7可用的自定义箭矢 &a%s"
+  lore:
+    type: "&8箭矢"
+    damage: "&7⇪ 箭矢倍率: &fx%.1f"
+
+quiver:
+  name: "&6箭袋"
+  guititle: "箭袋"
+  save: "&6&l自定义箭矢 &r&8» &7已保存所有箭袋数据!"
+  getquiver: "&6&l自定义箭矢 &r&8» &7你获得了一个箭袋"
+  roll: "&6&l自定义箭矢 &r&8» &7优先弹药设置为槽位&8: &a%d"
+  command:
+    notplayer: "&7这个玩家不存在!"
+    notnumber: "&7这不是一个数字!"
+  lore:
+    type: "&8创造物"
+    lore1: " &8能够装入9组箭矢或烟花"
+    lore2: " &8Shift+按键来指定优先使用的弹药"
+  message:
+    give: "&6&l自定义箭矢 &r&8» &7箭袋发放成功"
+    get: "&6&l自定义箭矢 &r&8» &7你获得了一个箭袋!"
+    outarrow: "&6&l自定义箭矢 &r&8» &7没有可以使用的箭矢!"
+    noarrow: "&6&l自定义箭矢 &r&8» &7箭袋中没有任何弹药!"
+    fullinv: "&6&l自定义箭矢 &r&8» &7背包已满，无法取出!"
+    takeout: " "
+    takefail: "&6&l自定义箭矢 &r&8» &7无法从箭袋取箭!"
+    onlyarrow: " "
+#留空时禁用
+
+command:
+  reload:
+    success: "&6&l自定义箭矢 &r&8» &a配置重载成功!"
+  getarrow: "&a/arrow <玩家> [类型] (数量) &7- 获取指定箭矢"
+
+error:
+  no_permission: "&6&l自定义箭矢 &r&8» &c你没有执行此命令的权限!"

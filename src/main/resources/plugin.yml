@@ -1,0 +1,22 @@
+name: SunIslandArrowAddon
+version: '${project.version}'
+main: mcbi.top.sunislandarrowaddon
+api-version: '1.21'
+author: Natako
+description: "Quiver and Custom Arrow!"
+depend: [MythicLib]
+softdepend: [MythicMobs]
+commands:
+  givequiver:
+    description: "give player a quiver"
+    permission: quiver.command.givequiver
+    usage: /givequiver [player] (quiver id)
+  savequivers:
+    description: "save quiver data"
+    permission: quiver.command.savequivers
+  arrowaddonreload:
+    description: "reload plugins"
+  arrow:
+    description: "get custom arrow"
+    usage: /arrow [type] (count)
+    permission: quiver.command.arrow
