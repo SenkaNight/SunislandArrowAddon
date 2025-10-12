@@ -97,7 +97,10 @@ public class Quiver implements Listener {
         }
         Player target = Bukkit.getPlayer(args[0]);
         if (target == null) {
-            sender.sendMessage(MessageService.get().get("quiver.command.notplayer"));
+            String message = MessageService.get().getFormatted("quiver.command.notplayer");
+            if (message != null) {
+                sender.sendMessage(message);
+            }
             return false;
         }
         if (args.length > 1) {
@@ -110,7 +113,10 @@ public class Quiver implements Listener {
                 if (quiverOwner != null) {
                     giveBoundQuiverToPlayer(sender, target, quiverOwner);
                 } else {
-                    sender.sendMessage(MessageService.get().get("quiver.command.notplayer"));
+                    String message = MessageService.get().getFormatted("quiver.command.notplayer");
+                    if (message != null) {
+                        sender.sendMessage(message);
+                    }
                     return false;
                 }
             }
@@ -163,9 +169,15 @@ public class Quiver implements Listener {
             target.getWorld().dropItem(target.getLocation(), leftover.get(0));
         }
         if (sender != target) {
-            sender.sendMessage(MessageService.get().get("quiver.message.give"));
+            String message = MessageService.get().getFormatted("quiver.message.give");
+            if (message != null) {
+                sender.sendMessage(message);
+            }
         }
-        target.sendMessage(MessageService.get().get("quiver.message.get"));
+        String message = MessageService.get().getFormatted("quiver.message.get");
+        if (message != null) {
+            target.sendMessage(message);
+        }
     }
 
     public void giveBoundQuiverToPlayer(CommandSender sender, Player target, Player owner) {
@@ -180,9 +192,15 @@ public class Quiver implements Listener {
                 target.getWorld().dropItem(target.getLocation(), leftover.get(0));
             }
             if (sender != target) {
-                sender.sendMessage(MessageService.get().get("quiver.message.give"));
+                String message = MessageService.get().getFormatted("quiver.message.give");
+                if (message != null) {
+                    sender.sendMessage(message);
+                }
             }
-            target.sendMessage(MessageService.get().get("quiver.message.get"));
+            String message = MessageService.get().getFormatted("quiver.message.get");
+            if (message != null) {
+                target.sendMessage(message);
+            }
         }
     }
 
@@ -196,11 +214,11 @@ public class Quiver implements Listener {
             }
             return;
         }
-        ItemStack quiver = new ItemStack(Material.BUCKET);
+        ItemStack quiver = new ItemStack(Material.valueOf(MessageService.get().get("quiver.material")));
         ItemMeta meta = quiver.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(MessageService.get().get("quiver.name"));
-            meta.setCustomModelData(1001);
+            meta.setCustomModelData(Integer.valueOf(MessageService.get().get("quiver.modeldata")));
             List<String> lore = new ArrayList<>();
             lore.add(MessageService.get().get("quiver.lore.type"));
             lore.add("§7");
@@ -226,10 +244,16 @@ public class Quiver implements Listener {
                 target.getWorld().dropItem(target.getLocation(), leftover.get(0));
             }
             if (sender != target) {
-                sender.sendMessage(MessageService.get().get("quiver.message.give"));
+                String message = MessageService.get().getFormatted("quiver.message.give");
+                if (message != null) {
+                    sender.sendMessage(message);
+                }
                 plugin.getLogger().info("Give " + target.getName() + " Quiver, ID: " + quiverId);
             }
-            target.sendMessage(MessageService.get().get("quiver.message.get"));
+            String message = MessageService.get().getFormatted("quiver.message.get");
+            if (message != null) {
+                target.sendMessage(message);
+            }
             getQuiverData(quiverId);
         } else {
             plugin.getLogger().info("Create quiver fail!");
@@ -496,7 +520,10 @@ public class Quiver implements Listener {
                     offhand.getType() != Material.FIREWORK_ROCKET) {
                 HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(offhand);
                 if (!leftover.isEmpty()) {
-                    player.sendMessage(MessageService.get().get("quiver.message.fullinv"));
+                    String message = MessageService.get().getFormatted("quiver.message.fullinv");
+                    if (message != null) {
+                        player.sendMessage(message);
+                    }
                     event.setCancelled(true);
                     return;
                 }
@@ -512,18 +539,27 @@ public class Quiver implements Listener {
         if (weapon.getType() == Material.BOW && arrow != null && arrow.getType() == Material.FIREWORK_ROCKET) {
             arrow = findNonFireworkArrow(data);
             if (arrow == null) {
-                player.sendMessage(MessageService.get().get("quiver.message.outarrow"));
+                String message = MessageService.get().getFormatted("quiver.message.outarrow");
+                if (message != null) {
+                    player.sendMessage(message);
+                }
                 event.setCancelled(true);
                 return;
             }
         }
         if (arrow == null) {
-            player.sendMessage(MessageService.get().get("quiver.message.noarrow"));
+            String message = MessageService.get().getFormatted("quiver.message.noarrow");
+            if (message != null) {
+                player.sendMessage(message);
+            }
             event.setCancelled(true);
             return;
         }
         if (player.getInventory().firstEmpty() == -1) {
-            player.sendMessage(MessageService.get().get("quiver.message.fullinv"));
+            String message = MessageService.get().getFormatted("quiver.message.fullinv");
+            if (message != null) {
+                player.sendMessage(message);
+            }
             event.setCancelled(true);
             return;
         }
@@ -534,9 +570,15 @@ public class Quiver implements Listener {
             player.updateInventory();
             saveQuiverData(quiverId, data);
             usingQuiver.add(player.getUniqueId());
-            player.sendMessage(MessageService.get().get("quiver.message.takeout"));
+            String message = MessageService.get().getFormatted("quiver.message.takeout");
+            if (message != null) {
+                player.sendMessage(message);
+            }
         } else {
-            player.sendMessage(MessageService.get().get("quiver.message.takefail"));
+            String message = MessageService.get().getFormatted("quiver.message.takefail");
+            if (message != null) {
+                player.sendMessage(message);
+            }
             event.setCancelled(true);
         }
     }
@@ -657,21 +699,30 @@ public class Quiver implements Listener {
                     cursorItem != null && !isAllowedItem(cursorItem)) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.8f, 0.8f);
-                player.sendMessage(MessageService.get().get("quiver.message.onlyarrow"));
+                String message = MessageService.get().getFormatted("quiver.message.onlyarrow");
+                if (message != null) {
+                    player.sendMessage(message);
+                }
                 return;
             }
             if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY &&
                     currentItem != null && !isAllowedItem(currentItem)) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.8f, 0.8f);
-                player.sendMessage(MessageService.get().get("quiver.message.onlyarrow"));
+                String message = MessageService.get().getFormatted("quiver.message.onlyarrow");
+                if (message != null) {
+                    player.sendMessage(message);
+                }
                 return;
             }
             if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
                 if (cursorItem != null && !isAllowedItem(cursorItem)) {
                     event.setCancelled(true);
                     player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.8f, 0.8f);
-                    player.sendMessage(MessageService.get().get("quiver.message.onlyarrow"));
+                    String message = MessageService.get().getFormatted("quiver.message.onlyarrow");
+                    if (message != null) {
+                        player.sendMessage(message);
+                    }
                     return;
                 }
             }
@@ -682,7 +733,10 @@ public class Quiver implements Listener {
                     currentItem != null && !isAllowedItem(currentItem)) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.8f, 0.8f);
-                player.sendMessage(MessageService.get().get("quiver.message.onlyarrow"));
+                String message = MessageService.get().getFormatted("quiver.message.onlyarrow");
+                if (message != null) {
+                    player.sendMessage(message);
+                }
                 return;
             }
             if (currentItem != null && isQuiverItem(currentItem)) {
@@ -696,7 +750,10 @@ public class Quiver implements Listener {
             if (currentItem != null && !isAllowedItem(currentItem)) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.8f, 0.8f);
-                player.sendMessage(MessageService.get().get("quiver.message.onlyarrow"));
+                String message = MessageService.get().getFormatted("quiver.message.onlyarrow");
+                if (message != null) {
+                    player.sendMessage(message);
+                }
                 return;
             }
         }
@@ -710,7 +767,10 @@ public class Quiver implements Listener {
                     view.getTitle().equals(MessageService.get().get("quiver.guititle"))) {
                 event.setCancelled(true);
                 player.playSound(player.getLocation(), Sound.ITEM_BUNDLE_REMOVE_ONE, 0.8f, 0.8f);
-                player.sendMessage(MessageService.get().get("quiver.message.onlyarrow"));
+                String message = MessageService.get().getFormatted("quiver.message.onlyarrow");
+                if (message != null) {
+                    player.sendMessage(message);
+                }
                 return;
             }
         }

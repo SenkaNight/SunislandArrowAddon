@@ -58,15 +58,15 @@ public class ArrowCommand implements CommandExecutor, TabCompleter {
             sendHelp(sender);
             return true;
         }
-        arrowId = args[argIndex].toLowerCase();
+        arrowId = args[argIndex];
         if (args.length > argIndex + 1) {
             try {
-                amount = Math.min(64, Math.max(1, Integer.parseInt(args[argIndex + 1])));
+                amount = Math.min(32767, Math.max(1, Integer.parseInt(args[argIndex + 1])));
             } catch (NumberFormatException e) {
                 return true;
             }
         }
-        CustomArrow arrow = arrowManager.getArrow(arrowId);
+        CustomArrow arrow = arrowManager.getArrowCaseInsensitive(arrowId);
         if (arrow == null) {
             String availableIds = String.join(", ", arrowManager.getArrowIds());
             String formattedMessage = MessageService.get().getFormatted("arrow.unknown", availableIds);
@@ -81,15 +81,12 @@ public class ArrowCommand implements CommandExecutor, TabCompleter {
         String displayName = arrowItem.getItemMeta().hasDisplayName() ?
                 arrowItem.getItemMeta().getDisplayName() :
                 arrowItem.getType().toString();
-
-        // 发送成功消息
         if (sender.equals(targetPlayer)) {
             String formattedMessage = MessageService.get().getFormatted("arrow.give", amount, displayName);
             if (formattedMessage != null) {
                 sender.sendMessage(formattedMessage);
             }
         }
-
         return true;
     }
 
@@ -111,7 +108,7 @@ public class ArrowCommand implements CommandExecutor, TabCompleter {
             options.add("help");
             options.add("list");
             options.addAll(arrowManager.getArrowIds());
-            if (sender.hasPermission("arrow.allarrow") || !(sender instanceof Player)) {
+            if (sender.hasPermission("arrow.give.others") || !(sender instanceof Player)) {
                 options.addAll(Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
                         .collect(Collectors.toList()));
@@ -123,7 +120,9 @@ public class ArrowCommand implements CommandExecutor, TabCompleter {
             if (potentialPlayer != null) {
                 return StringUtil.copyPartialMatches(args[1], arrowManager.getArrowIds(), new ArrayList<>());
             } else {
-                if (args[0].equalsIgnoreCase("help") || args[0].equalsIgnoreCase("list")) {
+                if (arrowManager.getArrowCaseInsensitive(args[0]) != null) {
+                    return StringUtil.copyPartialMatches(args[1], Arrays.asList("1", "8", "16", "32", "64"), new ArrayList<>());
+                } else if (args[0].equalsIgnoreCase("help") || args[0].equalsIgnoreCase("list")) {
                     return completions;
                 }
             }
@@ -131,7 +130,9 @@ public class ArrowCommand implements CommandExecutor, TabCompleter {
         else if (args.length == 3) {
             Player potentialPlayer = Bukkit.getPlayer(args[0]);
             if (potentialPlayer != null) {
-                return Arrays.asList("1", "8", "16", "32", "64");
+                if (arrowManager.getArrowCaseInsensitive(args[1]) != null) {
+                    return StringUtil.copyPartialMatches(args[2], Arrays.asList("1", "8", "16", "32", "64"), new ArrayList<>());
+                }
             }
         }
 

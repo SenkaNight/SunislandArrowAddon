@@ -29,3 +29,12 @@ ice_arrow:
   hide-potion-effects: true
   potion-effect: "SLOW:100:2"
 #药效:持续时间（tick):等级，必须要物品为药水箭即TIPPED_ARROW才可用
+
+Glow_arrow:
+  material: SPECTRAL_ARROW
+  display-name: "&b发光箭"
+  extra-damage: 3
+  particle: WAX_ON
+  particle-count: 8
+  hide-potion-effects: true
+#药效:持续时间（tick):等级，必须要物品为药水箭即TIPPED_ARROW才可用

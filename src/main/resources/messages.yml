@@ -8,6 +8,8 @@ arrow:
 
 quiver:
   name: "&6箭袋"
+  material: "BUCKET"
+  modeldata: "1"
   guititle: "箭袋"
   save: "&6&l自定义箭矢 &r&8» &7已保存所有箭袋数据!"
   getquiver: "&6&l自定义箭矢 &r&8» &7你获得了一个箭袋"

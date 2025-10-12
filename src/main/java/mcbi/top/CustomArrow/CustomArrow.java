@@ -23,6 +23,7 @@ import java.util.Set;
 
 public class CustomArrow {
     private final String id;
+    private final String normalizedId;
     private final Material material;
     private final String displayName;
     private int customModelData;
@@ -40,34 +41,65 @@ public class CustomArrow {
     private final boolean hidePotionEffects;
     private JavaPlugin plugin;
     private final List<String> mythicSkills;
+
     public CustomArrow(String id, ConfigurationSection config) {
         this.id = id;
+        this.normalizedId = id.toLowerCase();
         this.plugin = plugin;
+
+        if (plugin != null) {
+            plugin.getLogger().info("Loading custom arrow: " + id);
+        }
+
         Material mat = Material.ARROW;
         try {
-            mat = Material.valueOf(config.getString("material", "ARROW").toUpperCase());
+            String materialStr = config.getString("material", "ARROW");
+            if (materialStr != null && !materialStr.isEmpty()) {
+                mat = Material.valueOf(materialStr.toUpperCase());
+            }
         } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("Error material type: " + config.getString("material"));
+            if (plugin != null) {
+                plugin.getLogger().warning("Error material type: " + config.getString("material") + " for arrow " + id);
+            }
         }
         this.material = mat;
+
         this.displayName = ChatColor.translateAlternateColorCodes('&',
                 config.getString("display-name", "CustomArrow"));
         this.customModelData = config.getInt("custom-model-data", 0);
         this.extraDamage = config.getDouble("extra-damage", 0.0);
-        Particle part = Particle.CRIT;
-        try {
-            part = Particle.valueOf(config.getString("particle", "CRIT").toUpperCase());
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("Error particle type: " + config.getString("particle"));
-        }
-        this.particle = part;
-        this.particleCount = Math.max(1, config.getInt("particle-count", 3));
-        this.lore = new ArrayList<>();
-        for (String line : config.getStringList("lore")) {
-            if (line != null && !line.isEmpty()) {
-                this.lore.add(ChatColor.translateAlternateColorCodes('&', line));
+
+        this.particle = null;
+        this.particleCount = 0;
+
+        if (config.contains("particle")) {
+            String particleConfig = config.getString("particle");
+            if (particleConfig != null && !particleConfig.isEmpty()) {
+                try {
+                    this.particle = Particle.valueOf(particleConfig.toUpperCase().trim());
+                    this.particleCount = Math.max(1, config.getInt("particle-count", 5));
+
+                    if (plugin != null) {
+                        plugin.getLogger().info("Arrow " + id + " - Particle: " + this.particle + ", Count: " + this.particleCount);
+                    }
+                } catch (IllegalArgumentException e) {
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Error particle type: " + particleConfig + " for arrow " + id);
+                    }
+                }
             }
         }
+
+        this.lore = new ArrayList<>();
+        List<String> configLore = config.getStringList("lore");
+        if (configLore != null) {
+            for (String line : configLore) {
+                if (line != null && !line.isEmpty()) {
+                    this.lore.add(ChatColor.translateAlternateColorCodes('&', line));
+                }
+            }
+        }
+
         this.enchantments = new HashMap<>();
         ConfigurationSection enchants = config.getConfigurationSection("enchantments");
         if (enchants != null) {
@@ -75,23 +107,40 @@ public class CustomArrow {
                 try {
                     Enchantment enchant = Enchantment.getByName(key.toUpperCase());
                     if (enchant != null) {
-                        this.enchantments.put(enchant, enchants.getInt(key));
+                        int level = enchants.getInt(key, 1);
+                        this.enchantments.put(enchant, level);
+                    } else {
+                        if (plugin != null) {
+                            plugin.getLogger().warning("Error enchant type: " + key + " for arrow " + id);
+                        }
                     }
                 } catch (IllegalArgumentException ignored) {
-                    plugin.getLogger().warning("Error enchant type: " + key);
+                    if (plugin != null) {
+                        plugin.getLogger().warning("Error enchant type: " + key + " for arrow " + id);
+                    }
                 }
             }
         }
+
         this.unbreakable = config.getBoolean("unbreakable", false);
         this.potionEffect = parsePotionEffect(config.getString("potion-effect"));
+
         this.itemFlags = new HashSet<>();
-        for (String flag : config.getStringList("item-flags")) {
-            try {
-                this.itemFlags.add(ItemFlag.valueOf(flag.toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Error ItemFlag type: " + flag);
+        List<String> flagsList = config.getStringList("item-flags");
+        if (flagsList != null) {
+            for (String flag : flagsList) {
+                if (flag != null && !flag.isEmpty()) {
+                    try {
+                        this.itemFlags.add(ItemFlag.valueOf(flag.toUpperCase()));
+                    } catch (IllegalArgumentException e) {
+                        if (plugin != null) {
+                            plugin.getLogger().warning("Error ItemFlag type: " + flag + " for arrow " + id);
+                        }
+                    }
+                }
             }
         }
+
         this.nbtData = new HashMap<>();
         ConfigurationSection nbtSection = config.getConfigurationSection("nbt-data");
         if (nbtSection != null) {
@@ -99,10 +148,38 @@ public class CustomArrow {
                 this.nbtData.put(key, nbtSection.get(key));
             }
         }
+
         this.hideAttributes = config.getBoolean("hide-attributes", false);
         this.hideEnchants = config.getBoolean("hide-enchants", false);
-        this.hidePotionEffects = config.getBoolean("hide-potion-effects", true);
+        this.hidePotionEffects = config.getBoolean("hide-potion-effects", false);
         this.mythicSkills = config.getStringList("mythic-skills");
+
+        if (!isValid()) {
+            if (plugin != null) {
+                plugin.getLogger().warning("Custom arrow " + id + " configuration is invalid!");
+            }
+        }
+    }
+
+    public boolean matchesId(String otherId) {
+        return this.normalizedId.equals(otherId.toLowerCase());
+    }
+
+    public String getNormalizedId() {
+        return normalizedId;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        CustomArrow that = (CustomArrow) obj;
+        return normalizedId.equals(that.normalizedId);
+    }
+
+    @Override
+    public int hashCode() {
+        return normalizedId.hashCode();
     }
 
     private PotionEffect parsePotionEffect(String effectStr) {
@@ -110,15 +187,39 @@ public class CustomArrow {
         try {
             String[] parts = effectStr.split(":");
             if (parts.length == 0) return null;
+
             PotionEffectType type = PotionEffectType.getByName(parts[0].toUpperCase());
             if (type == null) {
-                plugin.getLogger().warning("Error potion type: " + parts[0]);
+                if (plugin != null) {
+                    plugin.getLogger().warning("Error potion type: " + parts[0] + " for arrow " + id);
+                }
                 return null;
             }
-            int duration = parts.length > 1 ? Integer.parseInt(parts[1]) : 200;
-            int amplifier = parts.length > 2 ? Math.max(0, Integer.parseInt(parts[2]) - 1) : 0;
+
+            int duration;
+            int amplifier;
+            if (parts.length == 1) {
+                duration = 1600;
+                amplifier = 0;
+            } else if (parts.length == 2) {
+                duration = Math.max(0, Integer.parseInt(parts[1])) * 20;
+                amplifier = 0;
+            } else {
+                duration = Math.max(0, Integer.parseInt(parts[1])) * 20;
+                amplifier = Math.max(0, Integer.parseInt(parts[2]));
+            }
+
+            if (plugin != null) {
+                plugin.getLogger().info("Arrow " + id + " - Potion effect: " + type.getName() +
+                        ", Duration: " + duration + " ticks (" + (duration/20) + " seconds)" +
+                        ", Amplifier: " + amplifier);
+            }
+
             return new PotionEffect(type, duration, amplifier);
         } catch (Exception e) {
+            if (plugin != null) {
+                plugin.getLogger().warning("Error parsing potion effect: " + effectStr + " for arrow " + id + " - " + e.getMessage());
+            }
             return null;
         }
     }
@@ -127,10 +228,12 @@ public class CustomArrow {
         ItemStack item = new ItemStack(material, amount);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
+
         meta.setDisplayName(displayName);
         if (customModelData > 0) {
             meta.setCustomModelData(customModelData);
         }
+
         List<String> finalLore = new ArrayList<>();
         finalLore.add(MessageService.get().get("arrow.lore.type"));
         finalLore.add("§7 ");
@@ -138,41 +241,62 @@ public class CustomArrow {
             finalLore.add(String.format(MessageService.get().get("arrow.lore.damage"), extraDamage));
             finalLore.add("§7 ");
         }
-        finalLore.addAll(lore);
+        if (this.lore != null) {
+            finalLore.addAll(this.lore);
+        }
         meta.setLore(finalLore);
-        enchantments.forEach((ench, level) -> {
-            meta.addEnchant(ench, level, true);
-        });
+
+        if (this.enchantments != null) {
+            this.enchantments.forEach((ench, level) -> {
+                if (ench != null) {
+                    meta.addEnchant(ench, level, true);
+                }
+            });
+        }
+
         if (unbreakable) {
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
         }
-        if (!itemFlags.isEmpty()) {
-            meta.addItemFlags(itemFlags.toArray(new ItemFlag[0]));
+
+        if (this.itemFlags != null && !this.itemFlags.isEmpty()) {
+            meta.addItemFlags(this.itemFlags.toArray(new ItemFlag[0]));
         }
+
         if (hideAttributes) meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         if (hideEnchants) meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        if (hidePotionEffects) meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+
         if (meta instanceof PotionMeta potionMeta) {
             if (potionEffect != null) {
                 potionMeta.addCustomEffect(potionEffect, true);
             }
             if (hidePotionEffects) {
                 potionMeta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+            } else {
+                potionMeta.removeItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+            }
+        } else if (potionEffect != null) {
+            if (plugin != null) {
+                plugin.getLogger().warning("CustomArrow " + id + " has potion effect but material is not a potion type: " + material);
             }
         }
+
         item.setItemMeta(meta);
         return item;
     }
 
     public boolean isValid() {
-        return this.id != null && !this.id.isEmpty() &&
+        boolean valid = this.id != null && !this.id.isEmpty() &&
                 this.material != null &&
                 this.displayName != null && !this.displayName.isEmpty() &&
                 this.extraDamage >= 0 &&
-                this.particle != null &&
-                this.particleCount > 0 &&
                 this.lore != null;
+
+        if (!valid && plugin != null) {
+            plugin.getLogger().warning("Validation failed for arrow: " + id);
+        }
+
+        return valid;
     }
 
     public String getId() { return id; }
@@ -190,10 +314,7 @@ public class CustomArrow {
     public void setCustomModelData(int customModelData) { this.customModelData = customModelData; }
     public void setParticle(Particle particle) { this.particle = particle; }
     public void setParticleCount(int particleCount) { this.particleCount = particleCount; }
-    public double getExtraDamage() {
-        return extraDamage;
-    }
-    public void setDamageMultiplier(double damageMultiplier) {
-        this.extraDamage = damageMultiplier;
-    }
+    public double getExtraDamage() { return extraDamage; }
+    public void setDamageMultiplier(double damageMultiplier) { this.extraDamage = damageMultiplier; }
+    public boolean hasParticle() { return particle != null && particleCount > 0; }
 }

@@ -6,9 +6,7 @@ import io.lumine.mythic.lib.api.event.AttackEvent;
 import io.lumine.mythic.lib.damage.DamageType;
 import io.lumine.mythic.lib.damage.ProjectileAttackMetadata;
 import org.bukkit.Particle;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityShootBowEvent;
@@ -22,6 +20,7 @@ public class CustomArrowListener implements Listener {
     private final CustomArrowManager arrowManager;
     private final JavaPlugin plugin;
     private final BukkitAPIHelper mythicAPI;
+
     public CustomArrowListener(JavaPlugin plugin, CustomArrowManager arrowManager) {
         this.plugin = plugin;
         this.arrowManager = arrowManager;
@@ -30,11 +29,14 @@ public class CustomArrowListener implements Listener {
 
     @EventHandler
     public void onShoot(EntityShootBowEvent event) {
-        if (!(event.getEntity() instanceof Player) || !(event.getProjectile() instanceof Arrow)) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        Entity projectile = event.getProjectile();
+        if (!isSupportedProjectile(projectile)) {
             return;
         }
         Player player = (Player) event.getEntity();
-        Arrow arrow = (Arrow) event.getProjectile();
         ItemStack arrowItem = event.getConsumable();
         if (arrowItem == null || !arrowManager.isCustomArrow(arrowItem)) {
             return;
@@ -45,28 +47,54 @@ public class CustomArrowListener implements Listener {
             plugin.getLogger().warning("Cannot find arrow config: " + arrowId);
             return;
         }
-        arrow.setMetadata("CustomArrowID", new FixedMetadataValue(plugin, arrowId));
-        arrow.setMetadata("CustomArrowDamageMultiplier",
+
+        projectile.setMetadata("CustomArrowID", new FixedMetadataValue(plugin, arrowId));
+        projectile.setMetadata("CustomArrowDamageMultiplier",
                 new FixedMetadataValue(plugin, customArrow.getExtraDamage()));
-        arrow.setMetadata("CustomArrowParticle",
-                new FixedMetadataValue(plugin, customArrow.getParticle().name()));
-        arrow.setMetadata("CustomArrowParticleCount",
-                new FixedMetadataValue(plugin, customArrow.getParticleCount()));
-        arrow.setMetadata("CustomArrowShooter",
+        projectile.setMetadata("CustomArrowShooter",
                 new FixedMetadataValue(plugin, player.getUniqueId().toString()));
+        if (customArrow.getParticle() != null) {
+            startParticleTask(projectile, customArrow);
+        }
+    }
+    private void startParticleTask(Entity projectile, CustomArrow customArrow) {
         new BukkitRunnable() {
             public void run() {
-                if (arrow.isDead() || arrow.isOnGround()) {
+                if (projectile == null || projectile.isDead() || !projectile.isValid()) {
                     cancel();
                     return;
                 }
-                arrow.getWorld().spawnParticle(
-                        customArrow.getParticle(),
-                        arrow.getLocation(),
-                        customArrow.getParticleCount(),
-                        0.05, 0.05, 0.5,
-                        0.01
-                );
+                if (projectile instanceof AbstractArrow) {
+                    AbstractArrow arrow = (AbstractArrow) projectile;
+                    if (arrow.isInBlock() || arrow.isOnGround()) {
+                        cancel();
+                        return;
+                    }
+                } else if (projectile instanceof ThrownPotion) {
+                    ThrownPotion potion = (ThrownPotion) projectile;
+                    if (potion.isOnGround()) {
+                        cancel();
+                        return;
+                    }
+                } else if (projectile instanceof Firework) {
+                    Firework firework = (Firework) projectile;
+                    if (firework.isDetonated()) {
+                        cancel();
+                        return;
+                    }
+                }
+                try {
+                    projectile.getWorld().spawnParticle(
+                            customArrow.getParticle(),
+                            projectile.getLocation(),
+                            customArrow.getParticleCount(),
+                            0.05, 0.05, 0.1,
+                            0.02
+                    );
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to spawn particle: " + e.getMessage());
+                    cancel();
+                }
             }
         }.runTaskTimer(plugin, 0, 1);
     }
@@ -77,60 +105,75 @@ public class CustomArrowListener implements Listener {
             return;
         }
         ProjectileAttackMetadata projectileAttack = (ProjectileAttackMetadata) event.getAttack();
-        if (!(projectileAttack.getProjectile() instanceof Arrow arrow)) {
-            return;
+        Entity projectile = projectileAttack.getProjectile();
+        if (projectile != null && projectile.hasMetadata("CustomArrowDamageMultiplier")) {
+            double damageMultiplier = projectile.getMetadata("CustomArrowDamageMultiplier").get(0).asDouble();
+            event.getDamage().multiplicativeModifier(damageMultiplier, DamageType.PROJECTILE);
         }
-        if (!arrow.hasMetadata("CustomArrowDamageMultiplier")) {
-            return;
-        }
-        double damageMultiplier = arrow.getMetadata("CustomArrowDamageMultiplier").get(0).asDouble();
-        event.getDamage().multiplicativeModifier(damageMultiplier, DamageType.PHYSICAL);
-//        plugin.getLogger().info("应用自定义箭矢伤害倍率: " + damageMultiplier);
     }
 
     @EventHandler
     public void onHit(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof Arrow arrow)) {
+        Entity projectile = event.getEntity();
+        if (!isSupportedProjectile(projectile) ||
+                !projectile.hasMetadata("CustomArrowID") ||
+                !projectile.hasMetadata("CustomArrowShooter")) {
             return;
         }
-        if (!arrow.hasMetadata("CustomArrowID") || !arrow.hasMetadata("CustomArrowShooter")) {
-            return;
-        }
-        String arrowId = arrow.getMetadata("CustomArrowID").get(0).asString();
+        String arrowId = projectile.getMetadata("CustomArrowID").get(0).asString();
         CustomArrow customArrow = arrowManager.getArrow(arrowId);
         if (customArrow == null) {
             return;
         }
-        String shooterUUID = arrow.getMetadata("CustomArrowShooter").get(0).asString();
+
+        String shooterUUID = projectile.getMetadata("CustomArrowShooter").get(0).asString();
         Player shooter = plugin.getServer().getPlayer(java.util.UUID.fromString(shooterUUID));
         if (shooter == null || !shooter.isOnline()) {
             return;
         }
-        if (arrow.hasMetadata("CustomArrowParticle")) {
-            Particle particle = Particle.valueOf(
-                    arrow.getMetadata("CustomArrowParticle").get(0).asString());
-            int count = arrow.getMetadata("CustomArrowParticleCount").get(0).asInt();
-
-            arrow.getWorld().spawnParticle(
-                    particle,
-                    arrow.getLocation(),
-                    count,
-                    0.2, 0.2, 0.2,
-                    0.05
-            );
+        if (customArrow.getParticle() != null) {
+            spawnHitParticles(projectile, customArrow);
         }
-
         if (!customArrow.getMythicSkills().isEmpty()) {
-            Entity target = event.getHitEntity();
             for (String skill : customArrow.getMythicSkills()) {
                 try {
-                    mythicAPI.castSkill(shooter, skill, arrow.getLocation());
-//                    plugin.getLogger().info("触发MythicMobs技能: " + skill);
+                    mythicAPI.castSkill(shooter, skill, projectile.getLocation());
                 } catch (Exception e) {
-//                    plugin.getLogger().warning("触发MythicMobs技能时出错: " + skill);
-                    e.printStackTrace();
+                    plugin.getLogger().warning("Failed to cast skill: " + skill + " - " + e.getMessage());
                 }
             }
         }
+    }
+    private void spawnHitParticles(Entity projectile, CustomArrow customArrow) {
+        Particle particle = customArrow.getParticle();
+        int count = customArrow.getParticleCount();
+
+        try {
+            if (projectile instanceof Firework) {
+                projectile.getWorld().spawnParticle(
+                        particle,
+                        projectile.getLocation(),
+                        count * 10,
+                        1.0, 1.0, 1.0,
+                        0.3
+                );
+            } else {
+                projectile.getWorld().spawnParticle(
+                        particle,
+                        projectile.getLocation(),
+                        count * 5,
+                        0.5, 0.5, 0.5,
+                        0.1
+                );
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to spawn hit particle: " + e.getMessage());
+        }
+    }
+
+    private boolean isSupportedProjectile(Entity entity) {
+        return entity instanceof AbstractArrow ||
+                entity instanceof ThrownPotion ||
+                entity instanceof Firework;
     }
 }

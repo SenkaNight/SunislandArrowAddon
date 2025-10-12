@@ -74,10 +74,11 @@ public class MessageService {
                 plugin.getLogger().warning("Missing message key: " + k);
                 return null;
             }
-            String trimmedMsg = msg.trim();
-            if (trimmedMsg.isEmpty()) {
+            // 检查是否为空字符串，如果是则返回null
+            if (msg.trim().isEmpty()) {
                 return null;
             }
+            String trimmedMsg = msg.trim();
             return ChatColor.translateAlternateColorCodes('&', trimmedMsg);
         });
         if (message == null) {
@@ -85,22 +86,25 @@ public class MessageService {
         }
         return replacePlaceholders(message, placeholders);
     }
+
     public String getFormatted(String key, Object... args) {
         String message = get(key);
-        if (message == null || message.isEmpty()) {
+        if (message == null) {
             return null;
         }
         return String.format(message, args);
     }
+
     public String getFormatted(String key, Map<String, String> placeholders, Object... args) {
         String message = get(key, placeholders);
-        if (message == null || message.isEmpty()) {
+        if (message == null) {
             return null;
         }
         return String.format(message, args);
     }
+
     private String replacePlaceholders(String text, Map<String, String> placeholders) {
-        if (text == null || text.isEmpty() || placeholders == null || placeholders.isEmpty()) {
+        if (text == null || placeholders == null || placeholders.isEmpty()) {
             return text;
         }
         String result = text;
@@ -115,7 +119,7 @@ public class MessageService {
         for (String key : messages.getKeys(true)) {
             if (key.startsWith(prefix)) {
                 String message = get(key);
-                if (message != null && !message.isEmpty()) {
+                if (message != null) {
                     result.put(key.substring(prefix.length()), message);
                 }
             }

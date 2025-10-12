@@ -25,27 +25,23 @@ public class CustomArrowManager {
     public void loadArrows() {
         arrows.clear();
         customModelDataToIdMap.clear();
+
         File configFile = new File(plugin.getDataFolder(), "arrows.yml");
         if (!configFile.exists()) {
             plugin.getLogger().info("Create config...");
             plugin.saveResource("arrows.yml", false);
         }
         FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-//        plugin.getLogger().info("正在加载配置文件: " + configFile.getAbsolutePath());
-//        plugin.getLogger().info("配置文件内容: " + config.saveToString());
-        Set<String> keys = config.getKeys(false);
-        if (keys.isEmpty()) {
-            plugin.getLogger().severe("Cannot find arrow config!");
+        if (config.getKeys(false).isEmpty()) {
+            plugin.getLogger().warning("Arrow config empty！");
             return;
         }
-
-        for (String key : keys) {
+        for (String key : config.getKeys(false)) {
             try {
                 ConfigurationSection section = config.getConfigurationSection(key);
                 if (section == null) {
                     continue;
                 }
-
                 CustomArrow arrow = new CustomArrow(key, section);
                 if (arrow.isValid()) {
                     arrows.put(key, arrow);
@@ -53,21 +49,22 @@ public class CustomArrowManager {
                         customModelDataToIdMap.put(arrow.getCustomModelData(), key);
                     }
                 } else {
-                    plugin.getLogger().warning("Arrow config " + key + " error, pass");
                 }
             } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "Arrow config " + key + " errow:", e);
+                plugin.getLogger().log(Level.SEVERE, "Arrow " + key + " error:", e);
             }
         }
         if (arrows.isEmpty()) {
-            plugin.getLogger().severe("No Arrow loaded!");
+            plugin.getLogger().severe("No Arrows！");
         } else {
-            plugin.getLogger().info("Loaded Arrow: " + arrows.keySet());
+            plugin.getLogger().info("Load Arrow: " + arrows.keySet());
         }
     }
+
     public Set<String> getArrowIds() {
         return arrows.keySet();
     }
+
     public String getArrowId(ItemStack arrow) {
         if (arrow == null || arrow.getType() == Material.AIR) return null;
 
@@ -77,12 +74,15 @@ public class CustomArrowManager {
         int customModelData = meta.getCustomModelData();
         return customModelDataToIdMap.getOrDefault(customModelData, null);
     }
+
     public void reload() {
         loadArrows();
     }
+
     public CustomArrow getArrow(String id) {
         return arrows.get(id);
     }
+
     public boolean isCustomArrow(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {
             return false;
@@ -93,5 +93,19 @@ public class CustomArrowManager {
         ItemMeta meta = item.getItemMeta();
         return meta != null && meta.hasCustomModelData() &&
                 customModelDataToIdMap.containsKey(meta.getCustomModelData());
+    }
+
+    public CustomArrow getArrowCaseInsensitive(String id) {
+        CustomArrow exactMatch = arrows.get(id);
+        if (exactMatch != null) {
+            return exactMatch;
+        }
+        String lowerId = id.toLowerCase();
+        for (CustomArrow arrow : arrows.values()) {
+            if (arrow.getId().toLowerCase().equals(lowerId)) {
+                return arrow;
+            }
+        }
+        return null;
     }
 }
