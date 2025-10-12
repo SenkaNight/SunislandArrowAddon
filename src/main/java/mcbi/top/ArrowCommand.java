@@ -61,7 +61,7 @@ public class ArrowCommand implements CommandExecutor, TabCompleter {
         arrowId = args[argIndex];
         if (args.length > argIndex + 1) {
             try {
-                amount = Math.min(32767, Math.max(1, Integer.parseInt(args[argIndex + 1])));
+                amount = Math.min(1728, Math.max(1, Integer.parseInt(args[argIndex + 1])));
             } catch (NumberFormatException e) {
                 return true;
             }

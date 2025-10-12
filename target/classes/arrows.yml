@@ -1,0 +1,40 @@
+1:
+  material: ARROW
+  display-name: "&6火焰箭"
+  custom-model-data: 1
+  extra-damage: 2.5
+#箭矢造成的伤害的倍率
+  particle: FLAME
+  particle-count: 2
+#箭矢飞行时的粒子效果及其数量
+  lore:
+    - "&7燃烧你的敌人"
+  enchantments:
+    FIRE_ASPECT: 1
+  unbreakable: true
+  item-flags:
+    - HIDE_ATTRIBUTES
+    - HIDE_ENCHANTS
+  mythic-skills:
+    - "NetherBowS"
+    - "Ring"
+#命中或落地时触发的mythicmobs技能，填名字即可，可填多个
+
+ice_arrow:
+  material: TIPPED_ARROW
+  display-name: "&b冰霜箭"
+  extra-damage: 1.8
+  particle: SNOWBALL
+  particle-count: 3
+  hide-potion-effects: true
+  potion-effect: "SLOW:100:2"
+#药效:持续时间（tick):等级，必须要物品为药水箭即TIPPED_ARROW才可用
+
+Glow_arrow:
+  material: SPECTRAL_ARROW
+  display-name: "&b发光箭"
+  extra-damage: 3
+  particle: WAX_ON
+  particle-count: 8
+  hide-potion-effects: true
+#药效:持续时间（tick):等级，必须要物品为药水箭即TIPPED_ARROW才可用

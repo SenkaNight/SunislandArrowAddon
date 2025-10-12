@@ -74,7 +74,6 @@ public class MessageService {
                 plugin.getLogger().warning("Missing message key: " + k);
                 return null;
             }
-            // 检查是否为空字符串，如果是则返回null
             if (msg.trim().isEmpty()) {
                 return null;
             }
